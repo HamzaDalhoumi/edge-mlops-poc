@@ -1,0 +1,16 @@
+# Image du banc de mesure.
+# Construite en multi-architecture, elle permet d'executer le meme banc
+# sur x86_64 et sur ARM64, en local (emulation) comme en integration continue.
+FROM python:3.11-slim
+
+WORKDIR /bench
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ src/
+COPY models/ models/
+COPY budget.json .
+
+ENTRYPOINT ["python", "src/benchmark.py"]
+CMD ["--model", "models/model.onnx", "--runs", "50"]
