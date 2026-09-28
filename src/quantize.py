@@ -24,6 +24,8 @@ from onnxruntime.quantization import (
     quantize_static,
 )
 
+from modelutils import check_model, model_size_mb
+
 
 class NpyCalibrationReader(CalibrationDataReader):
     """Lit un fichier .npy de forme (N, ...) et le presente echantillon par echantillon."""
@@ -52,7 +54,7 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
-    size_before = os.path.getsize(args.input) / (1024 * 1024)
+    size_before = model_size_mb(args.input)
 
     if args.mode == "dynamic":
         quantize_dynamic(
@@ -77,7 +79,9 @@ def main():
             quant_format=None,
         )
 
-    size_after = os.path.getsize(args.output) / (1024 * 1024)
+    check_model(args.output)
+
+    size_after = model_size_mb(args.output)
     reduction = (1 - size_after / size_before) * 100
 
     print(f"Mode          : {args.mode}")

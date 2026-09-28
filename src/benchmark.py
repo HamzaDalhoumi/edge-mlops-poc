@@ -24,6 +24,8 @@ import time
 import numpy as np
 import onnxruntime as ort
 
+from modelutils import model_size_mb
+
 
 def build_random_inputs(session):
     """Genere des entrees aleatoires conformes a la signature du modele."""
@@ -80,7 +82,7 @@ def main():
 
     report = {
         "model": os.path.basename(args.model),
-        "size_mb": round(os.path.getsize(args.model) / (1024 * 1024), 3),
+        "size_mb": round(model_size_mb(args.model), 3),
         "runs": args.runs,
         "threads": args.threads,
         "latency_ms": {

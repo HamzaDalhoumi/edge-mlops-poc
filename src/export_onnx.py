@@ -15,6 +15,8 @@ import os
 import torch
 import torchvision.models as models
 
+from modelutils import check_model, model_size_mb
+
 ARCHITECTURES = {
     "mobilenet_v2": models.mobilenet_v2,
     "mobilenet_v3_small": models.mobilenet_v3_small,
@@ -46,10 +48,13 @@ def main():
         input_names=["input"],
         output_names=["output"],
         dynamic_axes={"input": {0: "batch"}, "output": {0: "batch"}},
+        dynamo=False,
     )
 
+    check_model(args.output)
+
     n_params = sum(p.numel() for p in model.parameters())
-    size_mb = os.path.getsize(args.output) / (1024 * 1024)
+    size_mb = model_size_mb(args.output)
 
     print(f"Architecture  : {args.arch}")
     print(f"Parametres    : {n_params:,}")

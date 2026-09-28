@@ -10,7 +10,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 python src/export_onnx.py --arch mobilenet_v2 --output models/model.onnx
-python src/quantize.py  --input models/model.onnx --output models/model_int8.onnx
+python src/repair_onnx.py --input models/model.onnx --output models/model_clean.onnx
+python src/quantize.py  --input models/model_clean.onnx --output models/model_int8.onnx
 python src/benchmark.py --model models/model_int8.onnx --out results/int8.json
 python src/check_budget.py --report results/int8.json --budget budget.json
 ```

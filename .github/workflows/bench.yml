@@ -33,8 +33,17 @@ jobs:
       - name: Installation des dependances
         run: pip install -r requirements.txt
 
+      - name: Installation de torch (export uniquement)
+        run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Export ONNX
+        run: python src/export_onnx.py --arch mobilenet_v2 --output models/model.onnx
+
+      - name: Reparation du graphe ONNX
+        run: python src/repair_onnx.py --input models/model.onnx --output models/model_clean.onnx
+
       - name: Quantification INT8
-        run: python src/quantize.py --input models/model.onnx --output models/model_int8.onnx
+        run: python src/quantize.py --input models/model_clean.onnx --output models/model_int8.onnx
 
       - name: Benchmark FP32
         run: python src/benchmark.py --model models/model.onnx --runs 50 --out results/${{ matrix.label }}_fp32.json
