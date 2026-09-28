@@ -4,3 +4,6 @@ __pycache__/
 results/
 data/
 *.onnx
+
+# Configuration locale de Claude Code (outil), pas du contenu de projet.
+.claude/
