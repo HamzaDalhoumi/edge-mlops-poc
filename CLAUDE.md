@@ -68,6 +68,80 @@ cette abstraction dans tout ajout.
 - Commentaires et messages utilisateur en français, code et identifiants en anglais
 - Messages de commit descriptifs, un commit par étape logique
 
+## État d'avancement
+
+Dernière mise à jour : 2026-09-28. Un seul commit existe dans l'historique
+(`552de7f`, structure initiale du 11 août) et aucun remote Git n'est
+configuré (`git remote -v` vide) — le dépôt n'a donc jamais été poussé.
+Le constat ci-dessous porte sur l'état réel du disque, pas seulement sur ce
+qui est commité.
+
+### Fait
+
+- Export ONNX (`src/export_onnx.py`) : MobileNetV2 pré-entraîné, 3 504 872
+  paramètres, produit `models/model.onnx` (13.34 Mo) — exécuté et vérifié.
+- Quantification dynamique **et** statique (`src/quantize.py`) : les deux
+  modes tournent, `model_int8.onnx` et `model_int8_static.onnx` générés.
+- Banc de mesure (`src/benchmark.py`) : taille, latence (médiane/p95), pic
+  mémoire, avec un bloc `environment` (machine, OS, threads, version ORT) —
+  chaque chiffre est accompagné de ses conditions d'exécution, conformément
+  à la règle 2.
+- Barrière de budget (`src/check_budget.py`) : sort en code 1 si un seuil
+  est dépassé ; testée dans les deux sens (OK et REJET) sur des rapports
+  réels.
+- Niveau 2 de la stratégie de validation exercé : benchmarks obtenus dans un
+  conteneur `--cpus=1.0 --memory=512m` (`results/fp32_docker.json`,
+  `results/int8_docker.json`, non commités — conforme à la convention).
+- Pipeline CI (`.github/workflows/bench.yml`) écrit, avec matrice x86_64 +
+  `ubuntu-24.04-arm` (niveau 1).
+
+### Partiel
+
+- **Niveau 1 (ARM64 réel) jamais exécuté** : le workflow existe mais,
+  faute de remote configuré, n'a jamais tourné sur GitHub Actions — aucune
+  mesure ARM64 réelle n'existe encore dans le dépôt.
+- **`budget.json` non calibré** : les seuils actuels (5.0 Mo / 50.0 ms /
+  300.0 Mo) sont des valeurs de placeholder. Les deux variantes mesurées à
+  ce jour (FP32 et INT8 dynamique) échouent la barrière.
+- **Export fragile face aux versions récentes de torch** : `torch` et
+  `torchvision` sont commentés (non épinglés) dans `requirements.txt`. Avec
+  une version récente (exporteur "dynamo" par défaut), l'export produit deux
+  fichiers (`model.onnx` + `.data`) et `os.path.getsize()` ne mesure alors
+  que le squelette (~0.25 Mo au lieu de la taille réelle) — un modèle hors
+  budget peut passer la barrière sans être détecté. Constat détaillé dans
+  l'audit du 11 août (non commité à ce jour).
+- **Quantification statique jamais testée en conditions réelles** :
+  calibration faite sur `data/calib.npy`, un jeu synthétique, pas de données
+  de calibration réelles documentées dans le dépôt.
+- **Historique Git incomplet** : un seul commit ; le travail réalisé depuis
+  (modèles générés, benchmarks Docker, audit de la chaîne) n'est pas
+  versionné, ce qui va à l'encontre de la convention « un commit par étape
+  logique ».
+
+### À faire
+
+- **Mesure de précision top-1 FP32 vs INT8** : aucun script ne l'implémente
+  (pas de `src/evaluate.py`). C'est le chiffre central attendu dans toute
+  comparaison de variantes, absent de la chaîne actuelle — alors que le
+  tableau de la stratégie de validation annonce la précision comme
+  exploitable au niveau 1.
+- **Abstraction d'« exécuteur de cible »** : annoncée ci-dessus comme
+  principe de conception central, mais `benchmark.py` appelle directement
+  `onnxruntime.InferenceSession`, sans classe `TargetRunner` /
+  `LocalRunner` / `ContainerRunner` / `EmulatedRunner`. Rien dans le code
+  ne force aujourd'hui un exécuteur « émulé » à marquer sa latence comme
+  non exploitable (règle 3) — c'est une discipline humaine, pas une
+  garantie du code.
+- `onnx.checker.check_model()` après export et après quantification — non
+  appelé ; aurait pu détecter plus tôt le problème d'export décrit
+  ci-dessus.
+- Format de quantification statique : `quant_format=None` fixé en dur dans
+  `quantize.py`, alors qu'ONNX Runtime recommande lui-même `QDQ` pour de
+  bonnes performances x64 (avertissement émis à l'exécution, actuellement
+  ignoré).
+- Note de cadrage écrite (livrable prévu pour la fin de la première
+  semaine).
+
 ## Ce que je dois pouvoir défendre
 
 Ce travail est présenté devant un jury. Je dois pouvoir expliquer chaque ligne.
