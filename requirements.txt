@@ -2,6 +2,7 @@
 onnx>=1.16
 onnxruntime>=1.18
 numpy>=1.24
+Pillow>=10.0
 
 # Export du modele de reference (facultatif : uniquement pour src/export_onnx.py)
 # torch>=2.2

@@ -3,6 +3,15 @@ name: Validation modele
 # Le runner ubuntu-24.04-arm est du silicium ARM64 reel et reste gratuit
 # sur les depots publics. Il tient lieu de cible ARM distante sans
 # necessiter aucune ressource materielle ni acces entreprise.
+#
+# Le pipeline construit tout depuis zero (aucun .onnx n'est commite,
+# results/ et data/ sont gitignores) : export, reparation, quantification
+# dynamique et statique QDQ, calibration sur des images Imagenette reelles,
+# benchmark et precision des 3 variantes, puis barriere de budget.
+#
+# Le jeu d'evaluation est reduit a 200 images en CI (contre 500 en local)
+# pour tenir le budget de temps annonce : c'est une condition de mesure a
+# part entiere, a rappeler si ces chiffres sont cites.
 
 on:
   push:
@@ -36,23 +45,59 @@ jobs:
       - name: Installation de torch (export uniquement)
         run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
+      - name: Cache Imagenette
+        uses: actions/cache@v4
+        with:
+          path: data/imagenette2-320
+          key: imagenette2-320-v1
+
+      - name: Telechargement Imagenette
+        run: python src/evaluate.py --download
+
       - name: Export ONNX
         run: python src/export_onnx.py --arch mobilenet_v2 --output models/model.onnx
 
       - name: Reparation du graphe ONNX
         run: python src/repair_onnx.py --input models/model.onnx --output models/model_clean.onnx
 
-      - name: Quantification INT8
-        run: python src/quantize.py --input models/model_clean.onnx --output models/model_int8.onnx
+      - name: Quantification dynamique
+        run: python src/quantize.py --input models/model_clean.onnx --output models/model_int8.onnx --mode dynamic
+
+      - name: Construction du jeu de calibration (200 images, dossier train)
+        run: python src/build_calibration.py --data data/imagenette2-320 --limit 200 --out data/calib.npy
+
+      - name: Quantification statique QDQ
+        run: python src/quantize.py --input models/model_clean.onnx --output models/model_int8_static.onnx --mode static --calibration data/calib.npy
 
       - name: Benchmark FP32
-        run: python src/benchmark.py --model models/model.onnx --runs 50 --out results/${{ matrix.label }}_fp32.json
+        run: python src/benchmark.py --model models/model.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_fp32.json
 
-      - name: Benchmark INT8
-        run: python src/benchmark.py --model models/model_int8.onnx --runs 50 --out results/${{ matrix.label }}_int8.json
+      - name: Benchmark INT8 dynamique
+        run: python src/benchmark.py --model models/model_int8.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_int8_dynamic.json
 
-      - name: Verification du budget
-        run: python src/check_budget.py --report results/${{ matrix.label }}_int8.json --budget budget.json
+      - name: Benchmark INT8 statique QDQ
+        run: python src/benchmark.py --model models/model_int8_static.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_int8_static.json
+
+      - name: Precision FP32 (reference)
+        run: python src/evaluate.py --model models/model.onnx --limit 200 --out results/${{ matrix.label }}_acc_fp32.json
+
+      - name: Precision INT8 dynamique
+        run: python src/evaluate.py --model models/model_int8.onnx --limit 200 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_dynamic.json
+
+      - name: Precision INT8 statique QDQ
+        run: python src/evaluate.py --model models/model_int8_static.onnx --limit 200 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_static.json
+
+      - name: Verification du budget - FP32
+        if: always()
+        run: python src/check_budget.py --report results/${{ matrix.label }}_fp32.json --budget budget-tolerant.json --accuracy results/${{ matrix.label }}_acc_fp32.json --accuracy-reference results/${{ matrix.label }}_acc_fp32.json
+
+      - name: Verification du budget - INT8 dynamique
+        if: always()
+        run: python src/check_budget.py --report results/${{ matrix.label }}_int8_dynamic.json --budget budget-tolerant.json --accuracy results/${{ matrix.label }}_acc_int8_dynamic.json --accuracy-reference results/${{ matrix.label }}_acc_fp32.json
+
+      - name: Verification du budget - INT8 statique QDQ
+        if: always()
+        run: python src/check_budget.py --report results/${{ matrix.label }}_int8_static.json --budget budget-tolerant.json --accuracy results/${{ matrix.label }}_acc_int8_static.json --accuracy-reference results/${{ matrix.label }}_acc_fp32.json
 
       - name: Publication des rapports
         if: always()
