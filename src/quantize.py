@@ -19,6 +19,7 @@ import os
 import numpy as np
 from onnxruntime.quantization import (
     CalibrationDataReader,
+    QuantFormat,
     QuantType,
     quantize_dynamic,
     quantize_static,
@@ -76,7 +77,10 @@ def main():
             model_input=args.input,
             model_output=args.output,
             calibration_data_reader=reader,
-            quant_format=None,
+            quant_format=QuantFormat.QDQ,
+            per_channel=True,
+            activation_type=QuantType.QUInt8,
+            weight_type=QuantType.QInt8,
         )
 
     check_model(args.output)
