@@ -17,8 +17,14 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--report", required=True)
+    parser.add_argument("--report", required=True,
+                        help="Rapport de benchmark (JSON produit par benchmark.py).")
     parser.add_argument("--budget", required=True)
+    parser.add_argument("--accuracy", default=None,
+                        help="Rapport de precision du modele evalue (JSON produit par evaluate.py).")
+    parser.add_argument("--accuracy-reference", default=None,
+                        help="Rapport de precision du modele FP32 de reference, requis avec "
+                             "--accuracy pour calculer l'ecart de precision en points.")
     args = parser.parse_args()
 
     with open(args.report) as f:
@@ -48,6 +54,22 @@ def main():
             report["peak_memory_mb"],
             budget["max_peak_memory_mb"],
             "Mo",
+        ))
+    if "max_accuracy_drop_pts" in budget:
+        if not args.accuracy:
+            raise SystemExit("budget.json fixe max_accuracy_drop_pts : --accuracy est requis.")
+        if not args.accuracy_reference:
+            raise SystemExit("--accuracy requiert --accuracy-reference pour calculer l'ecart en points.")
+        with open(args.accuracy) as f:
+            accuracy = json.load(f)
+        with open(args.accuracy_reference) as f:
+            accuracy_reference = json.load(f)
+        drop = accuracy_reference["top1_accuracy"] - accuracy["top1_accuracy"]
+        checks.append((
+            "Perte de precision",
+            drop,
+            budget["max_accuracy_drop_pts"],
+            "pts",
         ))
 
     failures = 0

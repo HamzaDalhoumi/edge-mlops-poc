@@ -1,0 +1,22 @@
+{
+  "model": "model_int8_static.onnx",
+  "size_mb": 3.724,
+  "runs": 50,
+  "threads": 1,
+  "latency_ms": {
+    "median": 6.541,
+    "mean": 6.649,
+    "p95": 7.224,
+    "min": 6.077,
+    "max": 8.546
+  },
+  "peak_memory_mb": 91.2,
+  "environment": {
+    "machine": "x86_64",
+    "processor": "n/a",
+    "system": "Linux",
+    "python": "3.11.16",
+    "onnxruntime": "1.30.0",
+    "cpu_count_visible": 16
+  }
+}

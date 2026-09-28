@@ -1,5 +1,6 @@
 {
   "max_size_mb": 5.0,
   "max_latency_p95_ms": 50.0,
-  "max_peak_memory_mb": 300.0
+  "max_peak_memory_mb": 300.0,
+  "max_accuracy_drop_pts": 10.0
 }

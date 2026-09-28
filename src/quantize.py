@@ -19,11 +19,18 @@ import os
 import numpy as np
 from onnxruntime.quantization import (
     CalibrationDataReader,
+    CalibrationMethod,
     QuantFormat,
     QuantType,
     quantize_dynamic,
     quantize_static,
 )
+
+CALIBRATION_METHODS = {
+    "minmax": CalibrationMethod.MinMax,
+    "percentile": CalibrationMethod.Percentile,
+    "entropy": CalibrationMethod.Entropy,
+}
 
 from modelutils import check_model, model_size_mb
 
@@ -52,6 +59,8 @@ def main():
                         help="Fichier .npy de donnees de calibration (mode statique uniquement).")
     parser.add_argument("--input-name", default=None,
                         help="Nom du tenseur d'entree (mode statique). Detecte automatiquement si omis.")
+    parser.add_argument("--calibrate-method", choices=sorted(CALIBRATION_METHODS), default="minmax",
+                        help="Methode de calibration des activations (mode statique uniquement).")
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
@@ -81,6 +90,7 @@ def main():
             per_channel=True,
             activation_type=QuantType.QUInt8,
             weight_type=QuantType.QInt8,
+            calibrate_method=CALIBRATION_METHODS[args.calibrate_method],
         )
 
     check_model(args.output)

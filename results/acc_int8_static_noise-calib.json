@@ -1,0 +1,8 @@
+{
+  "model": "model_int8_static_noise.onnx",
+  "images": 500,
+  "top1_accuracy": 16.6,
+  "dataset": "imagenette2-320 (val)",
+  "reference": "model.onnx",
+  "agreement_with_reference": 17.4
+}
