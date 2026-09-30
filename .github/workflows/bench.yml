@@ -9,9 +9,11 @@ name: Validation modele
 # dynamique et statique QDQ, calibration sur des images Imagenette reelles,
 # benchmark et precision des 3 variantes, puis barriere de budget.
 #
-# Le jeu d'evaluation est reduit a 200 images en CI (contre 500 en local)
-# pour tenir le budget de temps annonce : c'est une condition de mesure a
-# part entiere, a rappeler si ces chiffres sont cites.
+# Le jeu d'evaluation compte 500 images, comme en local, pour que les
+# precisions CI et locales portent sur exactement les memes images val.
+# Les empreintes SHA-256 du jeu de calibration et des modeles sont publiees
+# avec les rapports : elles permettent de verifier qu'une divergence entre
+# CI et local vient bien des entrees, et non du code.
 
 on:
   push:
@@ -79,13 +81,13 @@ jobs:
         run: python src/benchmark.py --model models/model_int8_static.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_int8_static.json
 
       - name: Precision FP32 (reference)
-        run: python src/evaluate.py --model models/model.onnx --limit 200 --out results/${{ matrix.label }}_acc_fp32.json
+        run: python src/evaluate.py --model models/model.onnx --limit 500 --out results/${{ matrix.label }}_acc_fp32.json
 
       - name: Precision INT8 dynamique
-        run: python src/evaluate.py --model models/model_int8.onnx --limit 200 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_dynamic.json
+        run: python src/evaluate.py --model models/model_int8.onnx --limit 500 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_dynamic.json
 
       - name: Precision INT8 statique QDQ
-        run: python src/evaluate.py --model models/model_int8_static.onnx --limit 200 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_static.json
+        run: python src/evaluate.py --model models/model_int8_static.onnx --limit 500 --reference models/model.onnx --out results/${{ matrix.label }}_acc_int8_static.json
 
       - name: Verification du budget - FP32
         if: always()
@@ -98,6 +100,10 @@ jobs:
       - name: Verification du budget - INT8 statique QDQ
         if: always()
         run: python src/check_budget.py --report results/${{ matrix.label }}_int8_static.json --budget budget-tolerant.json --accuracy results/${{ matrix.label }}_acc_int8_static.json --accuracy-reference results/${{ matrix.label }}_acc_fp32.json
+
+      - name: Empreintes des entrees et des modeles
+        if: always()
+        run: sha256sum data/calib.npy models/*.onnx | tee results/${{ matrix.label }}_sha256.txt
 
       - name: Publication des rapports
         if: always()
