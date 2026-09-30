@@ -47,6 +47,11 @@ jobs:
       - name: Installation de torch (export uniquement)
         run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
+      - name: Versions installees
+        run: |
+          mkdir -p results
+          { python --version; pip freeze; } | tee results/${{ matrix.label }}_pip_freeze.txt
+
       - name: Cache Imagenette
         uses: actions/cache@v4
         with:
@@ -110,4 +115,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-${{ matrix.label }}
-          path: results/
+          # Modeles publies pour diagnostic : model_clean.onnx est l'entree de
+          # la quantification, model_int8_static.onnx sa sortie.
+          path: |
+            results/
+            models/model_clean.onnx
+            models/model_int8_static.onnx
