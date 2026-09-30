@@ -64,7 +64,10 @@ cette abstraction dans tout ajout.
 
 - Python 3.11, pas de framework superflu, bibliothèque standard privilégiée
 - Chaque script est exécutable seul en ligne de commande avec `argparse`
-- Sorties de mesure en JSON dans `results/`, jamais commitées
+- Sorties de mesure en JSON dans `results/`. Les `results/*.json` cités dans
+  le rapport sont **versionnés volontairement** (ajoutés avec `git add -f`,
+  `results/` restant dans `.gitignore` pour ne pas commiter par accident
+  les sorties intermédiaires) : ce sont les preuves chiffrées du rapport
 - Commentaires et messages utilisateur en français, code et identifiants en anglais
 - Messages de commit descriptifs, un commit par étape logique
 
@@ -91,7 +94,8 @@ qui est commité.
   réels.
 - Niveau 2 de la stratégie de validation exercé : benchmarks obtenus dans un
   conteneur `--cpus=1.0 --memory=512m` (`results/fp32_docker.json`,
-  `results/int8_docker.json`, non commités — conforme à la convention).
+  `results/int8_dynamic_docker.json`, `results/int8_static_docker.json`),
+  versionnés comme preuves du rapport.
 - Pipeline CI (`.github/workflows/bench.yml`) écrit, avec matrice x86_64 +
   `ubuntu-24.04-arm` (niveau 1).
 
