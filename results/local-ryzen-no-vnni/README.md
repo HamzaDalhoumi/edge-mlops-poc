@@ -1,0 +1,1 @@
+Précisions QDQ mesurées sur AMD Ryzen 7 5800H (AVX2 sans VNNI, ORT 1.28.0, Windows) : faussées par la saturation U8S8 de VPMADDUBSW (le modèle QDQ du CI y donne 64,0 % contre 72,4 % en CI), à ne pas citer comme précision du modèle.

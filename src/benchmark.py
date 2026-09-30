@@ -24,6 +24,7 @@ import time
 import numpy as np
 import onnxruntime as ort
 
+from hostinfo import environment
 from modelutils import model_size_mb
 
 
@@ -93,14 +94,7 @@ def main():
             "max": round(latencies_ms[-1], 3),
         },
         "peak_memory_mb": round(peak_memory_mb(), 1),
-        "environment": {
-            "machine": platform.machine(),
-            "processor": platform.processor() or "n/a",
-            "system": platform.system(),
-            "python": platform.python_version(),
-            "onnxruntime": ort.__version__,
-            "cpu_count_visible": os.cpu_count(),
-        },
+        "environment": environment(ort.__version__),
     }
 
     print(json.dumps(report, indent=2))

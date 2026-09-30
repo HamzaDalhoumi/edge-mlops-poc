@@ -30,6 +30,8 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
+from hostinfo import environment
+
 IMAGENETTE_URL = "https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-320.tgz"
 CLASS_INDEX_URL = (
     "https://raw.githubusercontent.com/pytorch/vision/main/gallery/assets/"
@@ -152,6 +154,7 @@ def main():
         "images": total,
         "top1_accuracy": round(100 * correct / total, 2),
         "dataset": "imagenette2-320 (val)",
+        "environment": environment(ort.__version__),
     }
     if reference is not None:
         report["reference"] = os.path.basename(args.reference)
