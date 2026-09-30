@@ -129,13 +129,12 @@ qui est commité.
   comparaison de variantes, absent de la chaîne actuelle — alors que le
   tableau de la stratégie de validation annonce la précision comme
   exploitable au niveau 1.
-- **Abstraction d'« exécuteur de cible »** : annoncée ci-dessus comme
-  principe de conception central, mais `benchmark.py` appelle directement
-  `onnxruntime.InferenceSession`, sans classe `TargetRunner` /
-  `LocalRunner` / `ContainerRunner` / `EmulatedRunner`. Rien dans le code
-  ne force aujourd'hui un exécuteur « émulé » à marquer sa latence comme
-  non exploitable (règle 3) — c'est une discipline humaine, pas une
-  garantie du code.
+- **Abstraction d'« exécuteur de cible »** : `src/runners/` (2026-09-30).
+  `TargetRunner` (base) applique les règles dans `run_benchmark` : au
+  niveau 3, les latences sont supprimées (règle 3 garantie par le code) ;
+  le niveau 1 hors ARM64 est une erreur. Seul `LocalRunner` existe (niveau
+  déclaré par `--level`, défaut « développement ») ; un exécuteur pour
+  carte physique reste à écrire.
 - `onnx.checker.check_model()` après export et après quantification — non
   appelé ; aurait pu détecter plus tôt le problème d'export décrit
   ci-dessus.

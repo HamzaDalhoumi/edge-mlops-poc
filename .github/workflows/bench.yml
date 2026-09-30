@@ -29,8 +29,12 @@ jobs:
         include:
           - runner: ubuntu-24.04
             label: x86_64
+            # Pas une cible ARM : hors du tableau des niveaux.
+            level: developpement
           - runner: ubuntu-24.04-arm
             label: arm64
+            # Silicium ARM64 reel.
+            level: 1
     runs-on: ${{ matrix.runner }}
     name: Benchmark ${{ matrix.label }}
 
@@ -77,13 +81,13 @@ jobs:
         run: python src/quantize.py --input models/model_clean.onnx --output models/model_int8_static.onnx --mode static --calibration data/calib.npy
 
       - name: Benchmark FP32
-        run: python src/benchmark.py --model models/model.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_fp32.json
+        run: python src/benchmark.py --model models/model.onnx --runs 50 --threads 1 --level ${{ matrix.level }} --out results/${{ matrix.label }}_fp32.json
 
       - name: Benchmark INT8 dynamique
-        run: python src/benchmark.py --model models/model_int8.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_int8_dynamic.json
+        run: python src/benchmark.py --model models/model_int8.onnx --runs 50 --threads 1 --level ${{ matrix.level }} --out results/${{ matrix.label }}_int8_dynamic.json
 
       - name: Benchmark INT8 statique QDQ
-        run: python src/benchmark.py --model models/model_int8_static.onnx --runs 50 --threads 1 --out results/${{ matrix.label }}_int8_static.json
+        run: python src/benchmark.py --model models/model_int8_static.onnx --runs 50 --threads 1 --level ${{ matrix.level }} --out results/${{ matrix.label }}_int8_static.json
 
       - name: Precision FP32 (reference)
         run: python src/evaluate.py --model models/model.onnx --limit 500 --out results/${{ matrix.label }}_acc_fp32.json
